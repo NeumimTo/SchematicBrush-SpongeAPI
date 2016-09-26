@@ -328,11 +328,9 @@ public class SchematicBrush {
     public void onEnable(GameInitializationEvent event) {
 
 
-        Optional<PluginContainer> pl = Sponge.getPluginManager().getPlugin("WorldEdit");
-        if (pl.isPresent()) {
-            if (!Files.exists(Paths.get(config.getAbsolutePath()+"/config.conf"))) {
+             if (!Files.exists(Paths.get(config.getAbsolutePath()))) {
                 try {
-                    new File(Paths.get(config.getAbsolutePath() + "/config.conf").toUri()).createNewFile();
+                    new File(Paths.get(config.getAbsolutePath()).toUri()).createNewFile();
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -359,12 +357,8 @@ public class SchematicBrush {
                     .arguments(GenericArguments.remainingJoinedStrings(Text.of("args")))
                     .executor(this::handleSCHLISTCommand)
                     .build(), "/schlist");
-        } else {
-            throw new RuntimeException("WorldEdit not installed");
         }
 
-
-    }
 
     private CommandResult handleSCHBRCommand(CommandSource commandSource, CommandContext commandContext) {
         if (!(commandSource instanceof Player)) {
@@ -709,7 +703,7 @@ public class SchematicBrush {
         if (fmt.equals("schematic")) {  // Get from worldedit directory
             return WorldEdit.getInstance().getWorkingDirectoryFile(WorldEdit.getInstance().getConfiguration().saveDir);
         } else {  // Else, our own type specific directory
-            return new File(config, fmt);
+            return new File(config.getParent(), fmt);
         }
     }
 
@@ -879,9 +873,10 @@ public class SchematicBrush {
     private void loadSchematicSets() {
         Gson g = new Gson();
         try {
-            String s = new String(Files.readAllBytes(Paths.get(config.getAbsolutePath()+"/config.conf")));
+            String s = new String(Files.readAllBytes(Paths.get(config.getAbsolutePath())));
             Type type = new TypeToken<Map<String, SchematicDef>>(){}.getType();
-            sets = new HashMap<>(g.fromJson(s, type));
+            LinkedHashMap obj = g.fromJson(s, type);
+            sets = new HashMap<>(obj == null ? Collections.EMPTY_MAP : obj);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -892,7 +887,7 @@ public class SchematicBrush {
 
         String s = g.toJson(sets);
         try {
-            Files.write(Paths.get(config.getAbsolutePath()+"/config.conf"),s.getBytes(), StandardOpenOption.CREATE);
+            Files.write(Paths.get(config.getAbsolutePath()),s.getBytes(), StandardOpenOption.CREATE);
         } catch (IOException e) {
             e.printStackTrace();
         }
