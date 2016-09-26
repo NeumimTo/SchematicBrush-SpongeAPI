@@ -105,6 +105,8 @@ public class SchematicBrush {
 
         @Override
         public boolean equals(Object o) {
+            if (o == this) return true;
+            if (o == null) return false;
             if (o instanceof SchematicDef) {
                 SchematicDef sd = (SchematicDef) o;
                 return sd.name.equals(this.name) && (sd.rotation == this.rotation) && (sd.flip == this.flip) && (sd.weight == this.weight) && (sd.offset == this.offset);
@@ -361,7 +363,7 @@ public class SchematicBrush {
 
 
     private CommandResult handleSCHBRCommand(CommandSource commandSource, CommandContext commandContext) {
-        if (!(commandSource instanceof Player)) {
+        if (!(commandSource instanceof org.spongepowered.api.entity.living.player.Player)) {
             commandSource.sendMessage(Text.of("This can only be used by players"));
             return CommandResult.empty();
         }
@@ -461,7 +463,7 @@ public class SchematicBrush {
     }
 
     private CommandResult handleSCHSETCommand(CommandSource commandSource, CommandContext commandContext) {
-        if (!(commandSource instanceof Player)) {
+        if (!(commandSource instanceof org.spongepowered.api.entity.living.player.Player)) {
             commandSource.sendMessage(Text.of("This can only be used by players"));
             return CommandResult.empty();
         }
@@ -711,7 +713,7 @@ public class SchematicBrush {
     private static final int LINES_PER_PAGE = 10;
 
     private CommandResult handleSCHLISTCommand(CommandSource commandSource, CommandContext commandContext) {
-        if (!(commandSource instanceof Player)) {
+        if (!(commandSource instanceof org.spongepowered.api.entity.living.player.Player)) {
             commandSource.sendMessage(Text.of("This can only be used by players"));
             return CommandResult.empty();
         }
