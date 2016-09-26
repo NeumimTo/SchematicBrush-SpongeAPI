@@ -4,7 +4,6 @@ import java.io.*;
 import java.lang.reflect.Type;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
-import java.nio.file.OpenOption;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.*;
@@ -16,7 +15,6 @@ import java.util.regex.PatternSyntaxException;
 import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.google.gson.internal.LinkedTreeMap;
 import com.google.inject.Inject;
 import com.sk89q.minecraft.util.commands.CommandsManager;
 import com.sk89q.worldedit.regions.CuboidRegion;
@@ -24,6 +22,7 @@ import com.sk89q.worldedit.regions.Region;
 import com.sk89q.worldedit.session.ClipboardHolder;
 import com.sk89q.worldedit.session.PasteBuilder;
 import com.sk89q.worldedit.sponge.SpongePlayer;
+import com.sk89q.worldedit.sponge.SpongeWorld;
 import com.sk89q.worldedit.sponge.SpongeWorldEdit;
 import com.sk89q.worldedit.util.Direction;
 import com.sk89q.worldedit.util.io.file.FilenameException;
@@ -72,7 +71,6 @@ import org.spongepowered.api.text.Text;
 
 @Plugin(id = "schematicbrush", name = "SchematicBrush", version = "1.0.0")
 public class SchematicBrush {
-    public WorldEdit we;
     public static final int DEFAULT_WEIGHT = -1;
 
     public enum Flip {
@@ -244,7 +242,8 @@ public class SchematicBrush {
         public void build(EditSession editsession, Vector pos, com.sk89q.worldedit.function.pattern.Pattern mat, double size) throws MaxChangedBlocksException {
             SchematicDef def = set.getRandomSchematic();    // Pick schematic from set
             if (def == null) return;
-            LocalSession sess = we.getSessionManager().get(player);
+
+            LocalSession sess = WorldEdit.getInstance().getSessionManager().get(player);
             int[] minY = new int[1];
             String schfilename = loadSchematicIntoClipboard(player, sess, def.name, def.format, minY);
             if (schfilename == null) {
@@ -444,7 +443,7 @@ public class SchematicBrush {
             }
         }
         // Connect to world edit session
-        LocalSession session = we.getSessionManager().get(player);
+        LocalSession session = WorldEdit.getInstance().getSessionManager().get(player);
 
         SchematicBrushInstance sbi = new SchematicBrushInstance();
         sbi.set = ss;
@@ -707,7 +706,7 @@ public class SchematicBrush {
 
     private File getDirectoryForFormat(String fmt) {
         if (fmt.equals("schematic")) {  // Get from worldedit directory
-            return we.getWorkingDirectoryFile(we.getConfiguration().saveDir);
+            return WorldEdit.getInstance().getWorkingDirectoryFile(WorldEdit.getInstance().getConfiguration().saveDir);
         } else {  // Else, our own type specific directory
             return new File(config, fmt);
         }
@@ -854,7 +853,7 @@ public class SchematicBrush {
             if (fname == null) {
                 return null;
             }
-            File f = we.getSafeOpenFile(null, dir, fname, formatName);
+            File f = WorldEdit.getInstance().getSafeOpenFile(null, dir, fname, formatName);
             if (!f.exists()) {
                 return null;
             }
@@ -885,26 +884,6 @@ public class SchematicBrush {
         } catch (IOException e) {
             e.printStackTrace();
         }
-    }
-
-    public static void main(String[] args) {
-        SchematicBrush b = new SchematicBrush();
-        List<SchematicDef> d = new ArrayList<>();
-        SchematicDef da = new SchematicDef();
-        da.flip = Flip.NS;
-        da.rotation = Rotation.ROT90;
-        da.weight = 10;
-        d.add(da);
-        d.add(da);
-        SchematicSet schematicSet = new SchematicSet("test1","desc",d);
-        b.sets = new HashMap<>();
-        b.sets.put("key",schematicSet);
-
-        SchematicSet set = new SchematicSet("test2","desca",Collections.EMPTY_LIST);
-        b.sets.put("keyb",set);
-        b.saveSchematicSets();
-        b.sets.clear();
-        b.loadSchematicSets();
     }
 
     private void saveSchematicSets() {
@@ -981,7 +960,7 @@ public class SchematicBrush {
         File f;
         boolean rslt = false;
         try {
-            f = we.getSafeOpenFile(null, dir, name, format);
+            f = WorldEdit.getInstance().getSafeOpenFile(null, dir, name, format);
             if (!f.exists()) {
                 player.printError("Schematic '" + name + "' file not found");
                 return null;
