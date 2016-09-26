@@ -64,12 +64,13 @@ import org.spongepowered.api.command.spec.CommandSpec;
 import org.spongepowered.api.config.DefaultConfig;
 import org.spongepowered.api.event.Listener;
 import org.spongepowered.api.event.game.state.GameInitializationEvent;
+import org.spongepowered.api.plugin.Dependency;
 import org.spongepowered.api.plugin.Plugin;
 import org.spongepowered.api.plugin.PluginContainer;
 import org.spongepowered.api.text.Text;
 
 
-@Plugin(id = "schematicbrush", name = "SchematicBrush", version = "1.0.0")
+@Plugin(id = "schematicbrush", name = "SchematicBrush", version = "1.0.0", dependencies = {@Dependency(id = "worldedit")})
 public class SchematicBrush {
     public static final int DEFAULT_WEIGHT = -1;
 
@@ -857,7 +858,7 @@ public class SchematicBrush {
             if (!f.exists()) {
                 return null;
             }
-            if ((formatName.equals("schematic") == false) && (formatName.equals("bo2") == false)) {
+            if ((!formatName.equals("schematic")) && (!formatName.equals("bo2"))) {
                 return null;
             }
             // If we're here, everything is good - make schematic object
