@@ -1,39 +1,14 @@
-package com.mikeprimm.bukkit.SchematicBrush;
-
-import java.io.*;
-import java.lang.reflect.Type;
-import java.nio.charset.Charset;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
-import java.util.*;
-import java.util.logging.Logger;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.regex.PatternSyntaxException;
+package com.mikeprimm.schematicbrush;
 
 import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.inject.Inject;
+import com.mikeprimm.schematicbrush.adapter.Adapter;
+import com.mikeprimm.schematicbrush.adapter.AdapterFactory;
 import com.sk89q.minecraft.util.commands.CommandsManager;
-import com.sk89q.worldedit.regions.CuboidRegion;
-import com.sk89q.worldedit.regions.Region;
-import com.sk89q.worldedit.session.ClipboardHolder;
-import com.sk89q.worldedit.session.PasteBuilder;
-import com.sk89q.worldedit.sponge.SpongePlayer;
-import com.sk89q.worldedit.sponge.SpongeWorld;
-import com.sk89q.worldedit.sponge.SpongeWorldEdit;
-import com.sk89q.worldedit.util.Direction;
-import com.sk89q.worldedit.util.io.file.FilenameException;
-import com.sk89q.worldedit.world.registry.WorldData;
-import com.sk89q.worldedit.EditSession;
-import com.sk89q.worldedit.EmptyClipboardException;
-import com.sk89q.worldedit.LocalSession;
-import com.sk89q.worldedit.MaxChangedBlocksException;
+import com.sk89q.worldedit.*;
 import com.sk89q.worldedit.Vector;
-import com.sk89q.worldedit.WorldEdit;
-import com.sk89q.worldedit.WorldEditException;
 import com.sk89q.worldedit.blocks.BaseBlock;
 import com.sk89q.worldedit.blocks.BlockID;
 import com.sk89q.worldedit.command.tool.BrushTool;
@@ -48,13 +23,13 @@ import com.sk89q.worldedit.extent.clipboard.io.ClipboardReader;
 import com.sk89q.worldedit.function.mask.BlockMask;
 import com.sk89q.worldedit.function.operation.Operations;
 import com.sk89q.worldedit.math.transform.AffineTransform;
-import ninja.leaping.configurate.ConfigurationNode;
-import ninja.leaping.configurate.ConfigurationOptions;
-import ninja.leaping.configurate.commented.CommentedConfigurationNode;
-import ninja.leaping.configurate.gson.GsonConfigurationLoader;
-import ninja.leaping.configurate.hocon.HoconConfigurationLoader;
-import ninja.leaping.configurate.loader.ConfigurationLoader;
-import ninja.leaping.configurate.objectmapping.ObjectMappingException;
+import com.sk89q.worldedit.regions.CuboidRegion;
+import com.sk89q.worldedit.regions.Region;
+import com.sk89q.worldedit.session.ClipboardHolder;
+import com.sk89q.worldedit.session.PasteBuilder;
+import com.sk89q.worldedit.util.Direction;
+import com.sk89q.worldedit.util.io.file.FilenameException;
+import com.sk89q.worldedit.world.registry.WorldData;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.command.CommandResult;
 import org.spongepowered.api.command.CommandSource;
@@ -66,11 +41,22 @@ import org.spongepowered.api.event.Listener;
 import org.spongepowered.api.event.game.state.GameInitializationEvent;
 import org.spongepowered.api.plugin.Dependency;
 import org.spongepowered.api.plugin.Plugin;
-import org.spongepowered.api.plugin.PluginContainer;
 import org.spongepowered.api.text.Text;
 
+import java.io.*;
+import java.lang.reflect.Type;
+import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
+import java.util.*;
+import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 
-@Plugin(id = "schematicbrush", name = "SchematicBrush", version = "1.0.0", dependencies = {@Dependency(id = "worldedit")})
+
+@Plugin(id = "schematicbrush", name = "schematicbrush", version = "1.1.0", dependencies = @Dependency(id = "worldedit"))
 public class SchematicBrush {
     public static final int DEFAULT_WEIGHT = -1;
 
@@ -166,7 +152,8 @@ public class SchematicBrush {
         public String desc;
         public List<SchematicDef> schematics;
 
-        public SchematicSet() {}
+        public SchematicSet() {
+        }
 
         public SchematicSet(String n, String d, List<SchematicDef> sch) {
             this.name = n;
@@ -203,7 +190,7 @@ public class SchematicBrush {
                 if ((total > 100) || (cnt == 0)) {
                     rndval = rnd.nextInt(total);    // Random from 0 to total-1
                 } else {
-                    rndval = rnd.nextInt(100);      // From 0 to 100 
+                    rndval = rnd.nextInt(100);      // From 0 to 100
                 }
                 if (rndval < total) {   // Fixed weight match
                     for (SchematicDef def : schematics) {
@@ -326,40 +313,42 @@ public class SchematicBrush {
     @Inject
     private Logger log;
 
+    private Adapter adapter = player -> Optional.empty();
+
     @Listener
     public void onEnable(GameInitializationEvent event) {
+        this.adapter = AdapterFactory.getAdapter();
 
-
-             if (!Files.exists(Paths.get(config.getAbsolutePath()))) {
-                try {
-                    new File(Paths.get(config.getAbsolutePath()).toUri()).createNewFile();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
+        if (!Files.exists(Paths.get(config.getAbsolutePath()))) {
+            try {
+                new File(Paths.get(config.getAbsolutePath()).toUri()).createNewFile();
+            } catch (IOException e) {
+                e.printStackTrace();
             }
-            // Initialize bo2 directory, if needed
-            File bo2dir = this.getDirectoryForFormat("bo2");
-            bo2dir.mkdirs();
-
-            // Load existing schematics
-            loadSchematicSets();
-
-
-            Sponge.getCommandManager().register(this, CommandSpec.builder()
-                    .arguments(GenericArguments.remainingJoinedStrings(Text.of("args")))
-                    .executor(this::handleSCHBRCommand)
-                    .build(), "/schbr");
-
-            Sponge.getCommandManager().register(this, CommandSpec.builder()
-                    .arguments(GenericArguments.remainingJoinedStrings(Text.of("args")))
-                    .executor(this::handleSCHSETCommand)
-                    .build(), "/schset");
-
-            Sponge.getCommandManager().register(this, CommandSpec.builder()
-                    .arguments(GenericArguments.remainingJoinedStrings(Text.of("args")))
-                    .executor(this::handleSCHLISTCommand)
-                    .build(), "/schlist");
         }
+        // Initialize bo2 directory, if needed
+        File bo2dir = this.getDirectoryForFormat("bo2");
+        bo2dir.mkdirs();
+
+        // Load existing schematics
+        loadSchematicSets();
+
+
+        Sponge.getCommandManager().register(this, CommandSpec.builder()
+                .arguments(GenericArguments.remainingJoinedStrings(Text.of("args")))
+                .executor(this::handleSCHBRCommand)
+                .build(), "/schbr");
+
+        Sponge.getCommandManager().register(this, CommandSpec.builder()
+                .arguments(GenericArguments.remainingJoinedStrings(Text.of("args")))
+                .executor(this::handleSCHSETCommand)
+                .build(), "/schset");
+
+        Sponge.getCommandManager().register(this, CommandSpec.builder()
+                .arguments(GenericArguments.remainingJoinedStrings(Text.of("args")))
+                .executor(this::handleSCHLISTCommand)
+                .build(), "/schlist");
+    }
 
 
     private CommandResult handleSCHBRCommand(CommandSource commandSource, CommandContext commandContext) {
@@ -370,7 +359,14 @@ public class SchematicBrush {
 
 
         org.spongepowered.api.entity.living.player.Player player0 = (org.spongepowered.api.entity.living.player.Player) commandSource;
-        SpongePlayer player = SpongeWorldEdit.inst().wrapPlayer(player0);
+        Optional<Player> playerOptional = adapter.wrapPlayer(player0);
+        if (!playerOptional.isPresent()) {
+            player0.sendMessage(Text.of("Could not detect a supported version of WorldEdit"));
+            return CommandResult.empty();
+        }
+
+        Player player = playerOptional.get();
+
         // Test for command access
         if (!player.hasPermission("schematicbrush.brush.use")) {
             player0.sendMessage(Text.of("You do not have access to this command"));
@@ -470,7 +466,14 @@ public class SchematicBrush {
 
 
         org.spongepowered.api.entity.living.player.Player player0 = (org.spongepowered.api.entity.living.player.Player) commandSource;
-        SpongePlayer player = SpongeWorldEdit.inst().wrapPlayer(player0);
+        Optional<Player> playerOptional = adapter.wrapPlayer(player0);
+        if (!playerOptional.isPresent()) {
+            player0.sendMessage(Text.of("Could not detect a supported version of WorldEdit"));
+            return CommandResult.empty();
+        }
+
+        Player player = playerOptional.get();
+
         // Test for command access
         if (!player.hasPermission("schematicbrush.brush.use")) {
             player0.sendMessage(Text.of("You do not have access to this command"));
@@ -720,7 +723,13 @@ public class SchematicBrush {
 
 
         org.spongepowered.api.entity.living.player.Player player0 = (org.spongepowered.api.entity.living.player.Player) commandSource;
-        SpongePlayer player = SpongeWorldEdit.inst().wrapPlayer(player0);
+        Optional<Player> playerOptional = adapter.wrapPlayer(player0);
+        if (!playerOptional.isPresent()) {
+            player0.sendMessage(Text.of("Could not detect a supported version of WorldEdit"));
+            return CommandResult.empty();
+        }
+
+        Player player = playerOptional.get();
         // Test for command access
         if (!player.hasPermission("schematicbrush.brush.use")) {
             player0.sendMessage(Text.of("You do not have access to this command"));
@@ -876,7 +885,8 @@ public class SchematicBrush {
         Gson g = new Gson();
         try {
             String s = new String(Files.readAllBytes(Paths.get(config.getAbsolutePath())));
-            Type type = new TypeToken<Map<String, SchematicDef>>(){}.getType();
+            Type type = new TypeToken<Map<String, SchematicDef>>() {
+            }.getType();
             LinkedHashMap obj = g.fromJson(s, type);
             sets = new HashMap<>(obj == null ? Collections.EMPTY_MAP : obj);
         } catch (IOException e) {
@@ -889,7 +899,7 @@ public class SchematicBrush {
 
         String s = g.toJson(sets);
         try {
-            Files.write(Paths.get(config.getAbsolutePath()),s.getBytes(), StandardOpenOption.CREATE);
+            Files.write(Paths.get(config.getAbsolutePath()), s.getBytes(), StandardOpenOption.CREATE);
         } catch (IOException e) {
             e.printStackTrace();
         }
