@@ -30,6 +30,7 @@ import com.sk89q.worldedit.session.PasteBuilder;
 import com.sk89q.worldedit.util.Direction;
 import com.sk89q.worldedit.util.io.file.FilenameException;
 import com.sk89q.worldedit.world.registry.WorldData;
+import org.slf4j.Logger;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.command.CommandResult;
 import org.spongepowered.api.command.CommandSource;
@@ -50,7 +51,6 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.*;
-import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
@@ -313,11 +313,17 @@ public class SchematicBrush {
     @Inject
     private Logger log;
 
-    private Adapter adapter = player -> Optional.empty();
+    private Adapter adapter = AdapterFactory.DUMMY;
 
     @Listener
     public void onEnable(GameInitializationEvent event) {
-        this.adapter = AdapterFactory.getAdapter();
+        adapter = AdapterFactory.getAdapter();
+
+        if (adapter.isPresent()) {
+            log.info("Successfully created adapter for the current version of WorldEdit");
+        } else {
+            log.info("Could not create an adapter for the current version of WorldEdit");
+        }
 
         if (!Files.exists(Paths.get(config.getAbsolutePath()))) {
             try {

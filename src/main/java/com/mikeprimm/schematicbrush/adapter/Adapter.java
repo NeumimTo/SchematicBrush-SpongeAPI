@@ -9,5 +9,7 @@ import java.util.Optional;
  */
 public interface Adapter {
 
+    boolean isPresent();
+
     Optional<Player> wrapPlayer(org.spongepowered.api.entity.living.player.Player player);
 }
