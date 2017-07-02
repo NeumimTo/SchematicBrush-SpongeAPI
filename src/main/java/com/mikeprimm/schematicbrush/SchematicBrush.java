@@ -221,15 +221,27 @@ public class SchematicBrush {
     private HashMap<String, SchematicSet> sets = new HashMap<String, SchematicSet>();
 
     public class SchematicBrushInstance implements Brush {
+
+        private static final long DELAY = 500;
+
         SchematicSet set;
         Player player;
         boolean skipair;
         boolean replaceall;
         int yoff;
         Placement place;
+        long time = 0;
 
         @Override
         public void build(EditSession editsession, Vector pos, com.sk89q.worldedit.function.pattern.Pattern mat, double size) throws MaxChangedBlocksException {
+            long now = System.currentTimeMillis();
+            if (now - time < DELAY) {
+                // prevent accidental spam-pasting?
+                return;
+            }
+
+            time = now;
+
             SchematicDef def = set.getRandomSchematic();    // Pick schematic from set
             if (def == null) return;
 
