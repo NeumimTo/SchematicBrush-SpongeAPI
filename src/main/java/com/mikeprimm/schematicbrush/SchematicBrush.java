@@ -903,8 +903,7 @@ public class SchematicBrush {
         Gson g = new Gson();
         try {
             String s = new String(Files.readAllBytes(Paths.get(config.getAbsolutePath())));
-            Type type = new TypeToken<Map<String, SchematicDef>>() {
-            }.getType();
+            Type type = new TypeToken<LinkedHashMap<String, SchematicDef>>(){}.getType();
             LinkedHashMap obj = g.fromJson(s, type);
             sets = new HashMap<>(obj == null ? Collections.EMPTY_MAP : obj);
         } catch (IOException e) {
