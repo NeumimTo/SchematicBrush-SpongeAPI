@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.mikeprimm</groupId>
     <artifactId>SchematicBrush</artifactId>
-    <version>1.1.1</version>
+    <version>1.1.2</version>
     <build>
         <plugins>
             <plugin>
@@ -37,31 +37,33 @@
 
     <dependencies>
         <dependency>
-            <groupId>com.sk89q.worldedit</groupId>
-            <artifactId>worldedit-sponge-mc1.10.2</artifactId>
-            <version>6.1.4-SNAPSHOT</version>
-            <scope>provided</scope>
-            <exclusions>
-                <exclusion>
-                    <artifactId>spongeapi</artifactId>
-                    <groupId>org.spongepowered</groupId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-
-        <dependency>
-            <groupId>com.sk89q.worldedit</groupId>
-            <artifactId>worldedit-forge-mc1.10.2</artifactId>
-            <version>6.1.5</version>
-            <scope>provided</scope>
-        </dependency>
-
-        <dependency>
             <groupId>org.spongepowered</groupId>
             <artifactId>spongeapi</artifactId>
-            <version>5.2.0-SNAPSHOT</version>
+            <version>7.1.0-SNAPSHOT</version>
             <scope>provided</scope>
         </dependency>
+        <dependency>
+            <groupId>com.sk89q.worldedit</groupId>
+            <artifactId>worldedit-sponge</artifactId>
+            <version>6.1.7-SNAPSHOT</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.sk89q.worldedit</groupId>
+            <artifactId>worldedit-core</artifactId>
+            <version>6.1.4-SNAPSHOT</version>
+        </dependency>
+
+
+       <!-- <dependency> No longer exists ??
+       https://maven.sk89q.com/repo/com/sk89q/worldedit/
+            <groupId>com.sk89q.worldedit</groupId>
+            <artifactId>worldedit-forge</artifactId>
+            <version>worldedit-sponge-6.1.7-20170108.034301-1</version>
+            <scope>provided</scope>
+        </dependency>
+-->
+
 
     </dependencies>
 </project>
