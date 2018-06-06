@@ -56,7 +56,7 @@ import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
 
-@Plugin(id = "schematicbrush", name = "schematicbrush", version = "1.1.0", dependencies = @Dependency(id = "worldedit"))
+@Plugin(id = "schematicbrush", name = "schematicbrush", version = "1.1.2", dependencies = @Dependency(id = "worldedit"))
 public class SchematicBrush {
     public static final int DEFAULT_WEIGHT = -1;
 
