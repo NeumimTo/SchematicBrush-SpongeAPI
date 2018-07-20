@@ -58,6 +58,9 @@ import java.util.regex.PatternSyntaxException;
 
 @Plugin(id = "schematicbrush", name = "schematicbrush", version = "1.1.2", dependencies = @Dependency(id = "worldedit"))
 public class SchematicBrush {
+
+    final Pattern uuidRegexp = Pattern.compile("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$");
+
     public static final int DEFAULT_WEIGHT = -1;
 
     public enum Flip {
@@ -234,13 +237,6 @@ public class SchematicBrush {
 
         @Override
         public void build(EditSession editsession, Vector pos, com.sk89q.worldedit.function.pattern.Pattern mat, double size) throws MaxChangedBlocksException {
-            long now = System.currentTimeMillis();
-            if (now - time < DELAY) {
-                // prevent accidental spam-pasting?
-                return;
-            }
-
-            time = now;
 
             SchematicDef def = set.getRandomSchematic();    // Pick schematic from set
             if (def == null) return;
@@ -302,6 +298,7 @@ public class SchematicBrush {
             PasteBuilder pb = cliph.createPaste(editsession, editsession.getWorld().getWorldData()).to(ppos)
                     .ignoreAirBlocks(skipair);
             Operations.completeLegacy(pb.build());
+            schfilename = schfilename.contains("/") ? "..." + schfilename.substring(schfilename.lastIndexOf("/")-5, schfilename.length()) : schfilename;
             player.print("Applied '" + schfilename + "', flip=" + flip.name() + ", rot=" + rot.deg + ", place=" + place.name());
         }
     }
@@ -401,7 +398,7 @@ public class SchematicBrush {
         SchematicSet ss = null;
         String[] args = argv.get().split(" ");
         if (args[0].startsWith("&")) {  // If set ID
-            if (player.hasPermission("schematicbrush.set.use") == false) {
+            if (!player.hasPermission("schematicbrush.set.use")) {
                 player.printError("Not permitted to use schematic sets");
                 return CommandResult.empty();
             }
@@ -781,7 +778,7 @@ public class SchematicBrush {
             return CommandResult.empty();
         }
         final Pattern p = Pattern.compile(".*\\." + fmt);
-        List<String> files = getMatchingFiles(dir, p);
+        List<String> files = getMatchingFiles(dir, p, playerOptional.get());
         Collections.sort(files);
         int cnt = (files.size() + LINES_PER_PAGE - 1) / LINES_PER_PAGE;  // Number of pages
         if (page < 1) page = 1;
@@ -873,7 +870,7 @@ public class SchematicBrush {
         // See if schematic name is valid
         File dir = getDirectoryForFormat(formatName);
         try {
-            String fname = this.resolveName(player, dir, name, formatName);
+            String fname = resolveName(player, dir, name, formatName);
             if (fname == null) {
                 return null;
             }
@@ -922,26 +919,32 @@ public class SchematicBrush {
         }
     }
 
-    private List<String> getMatchingFiles(File dir, Pattern p) {
-        ArrayList<String> matches = new ArrayList<String>();
-        getMatchingFiles(matches, dir, p, null);
-        return matches;
+    private List<String> getMatchingFiles(File dir, Pattern p, Actor actor) {
+        return getMatchingFiles(dir.listFiles(), p, null, actor);
     }
 
-    private void getMatchingFiles(List<String> rslt, File dir, Pattern p, String path) {
-        File[] fl = dir.listFiles();
-        if (fl == null) return;
-        for (File f : fl) {
+    private List<String> getMatchingFiles(File[] files, Pattern p, String path, Actor player) {
+        List<String> res = new ArrayList<>();
+        for (File f : files) {
             String n = (path == null) ? f.getName() : (path + "/" + f.getName());
-            if (f.isDirectory()) {
-                getMatchingFiles(rslt, f, p, n);
-            } else {
-                Matcher m = p.matcher(n);
-                if (m.matches()) {
-                    rslt.add(n);
-                }
+            if (isAnyPlayersDir(f) && f.getName().equalsIgnoreCase(player.getUniqueId().toString())) {
+                res.addAll(getMatchingFiles(f.listFiles(), p, n, player));
             }
+            Matcher m = p.matcher(f.getName());
+            if (m.matches()) {
+               res.add(n);
+            }
+
         }
+        return res;
+    }
+
+    private boolean isAnyPlayersDir(File f) {
+        if (!f.isDirectory()) {
+            return false;
+        }
+        Matcher matcher = uuidRegexp.matcher(f.getName());
+        return matcher.matches();
     }
 
     /* Resolve name to loadable name - if contains wildcards, pic random matching file */
@@ -955,8 +958,8 @@ public class SchematicBrush {
             final int extlen = ext.length();
             try {
                 final Pattern p = Pattern.compile(fname + "\\." + ext);
-                List<String> files = getMatchingFiles(dir, p);
-                if (files.isEmpty() == false) {    // Multiple choices?
+                List<String> files = getMatchingFiles(dir, p, player);
+                if (!files.isEmpty()) {    // Multiple choices?
                     String n = files.get(rnd.nextInt(files.size()));
                     n = n.substring(0, n.length() - extlen - 1);
                     return n;
